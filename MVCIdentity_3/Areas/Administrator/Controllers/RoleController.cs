@@ -60,5 +60,7 @@ namespace MVCIdentity_3.Areas.Administrator.Controllers
             }
             return View(model);
         }
+
+        //Todo : Ödev : Update ve Delete işlemi
     }
 }
