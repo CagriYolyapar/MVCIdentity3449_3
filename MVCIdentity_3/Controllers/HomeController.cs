@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using MVCIdentity_3.Models.Entities;
@@ -74,7 +75,7 @@ namespace MVCIdentity_3.Controllers
                     await _userManager.AddToRoleAsync(appUser, "Member");
                     #endregion
 
-                    TempData["message"]= $"{appUser.UserName} isimli kullanıcı basarıyla kayıt oldu";
+                    TempData["message"] = $"{appUser.UserName} isimli kullanıcı basarıyla kayıt oldu";
                     return RedirectToAction("Register");
                 }
 
@@ -85,9 +86,9 @@ namespace MVCIdentity_3.Controllers
             }
             else
             {
-                foreach(ValidationFailure validationError in validationResult.Errors)
+                foreach (ValidationFailure validationError in validationResult.Errors)
                 {
-                    ModelState.AddModelError(validationError.PropertyName,validationError.ErrorMessage);
+                    ModelState.AddModelError(validationError.PropertyName, validationError.ErrorMessage);
                 }
             }
 
@@ -111,14 +112,14 @@ namespace MVCIdentity_3.Controllers
             if (validationResult.IsValid)
             {
                 AppUser appUser = await _userManager.FindByNameAsync(model.UserName);
-                if(appUser == null)
+                if (appUser == null)
                 {
                     TempData["message"] = "Kullanıcı bulunamadı";
                     return RedirectToAction("SignIn", new { returnUrl = model.ReturnUrl });
                 }
 
                 SignInResult signInResult = await _signInManager.PasswordSignInAsync(appUser, model.Password, model.RememberMe, true);
-                if (signInResult.Succeeded) 
+                if (signInResult.Succeeded)
                 {
                     if (!string.IsNullOrEmpty(model.ReturnUrl))
                     {
@@ -126,7 +127,7 @@ namespace MVCIdentity_3.Controllers
                     }
 
                     IList<string> userRoles = await _userManager.GetRolesAsync(appUser);
-                    if (userRoles.Contains("Admin")) return RedirectToAction("AdminPanel", "Auth");
+                    if (userRoles.Contains("Admin")) return RedirectToAction("Index", "Role", new { Area="Administrator"});
                     else if (userRoles.Contains("Member")) return RedirectToAction("MemberPanel");
                     return RedirectToAction("Panel");
                 }
@@ -145,7 +146,7 @@ namespace MVCIdentity_3.Controllers
             }
             else
             {
-                foreach(ValidationFailure validationFailure in validationResult.Errors)
+                foreach (ValidationFailure validationFailure in validationResult.Errors)
                 {
                     ModelState.AddModelError(validationFailure.PropertyName, validationFailure.ErrorMessage);
                 }
@@ -153,5 +154,33 @@ namespace MVCIdentity_3.Controllers
 
             return View(model);
         }
+
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
+
+        public new async Task<IActionResult> SignOut()
+        {
+            await _signInManager.SignOutAsync();
+            return RedirectToAction("SignIn");
+        }
+
+        [Authorize(Roles = "Member")]
+        public IActionResult MemberPanel()
+        {
+            return View();
+        }
+
+        //Sakın söyle bir tanım yapmayın [Authorize("Admin")].Böyle yaparsanız sistem Authorization'in rol üzerinden oldugunu anlamaz ve onu bir policy keyword'u zanneder ve tanımlı degilse hata verir
+
+
+
+        
+        public IActionResult Panel()
+        {
+            return View();
+        }
+        
     }
 }
